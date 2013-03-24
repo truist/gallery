@@ -1,0 +1,8 @@
+% layout 'default';
+% title 'Gallery';
+<% foreach my $subalbum (@$subalbums) { %>
+	<a href="<%= $subalbum->[1] %>"><img src="<%= $subalbum->[0] %>" /></a>
+<% } %>
+<% foreach my $image (@$images) { %>
+	<a href="<%= $image->[1] %>"><img src="<%= $image->[0] %>" /></a>
+<% } %>

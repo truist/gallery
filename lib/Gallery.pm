@@ -77,6 +77,7 @@ sub resize_image {
 	my ($width, $height) = $image->Get('width', 'height');
 	if ($square) {
 		my $size = min($width, $height);
+STDOUT->print("ABOUT TO CROP $cur_path\n");
 		$error = $image->Crop(
 			x => ($width - $size) / 2,
 			y => ($height - $size) / 2,
@@ -94,6 +95,7 @@ sub resize_image {
 	my $scale_factor = min($width_factor, $height_factor);
 
 	if ($scale_factor < 1) {
+STDOUT->print("ABOUT TO SCALE $cur_path\n");
 		$error = $image->Scale(
 			width => $width * $scale_factor,
 			height => $height * $scale_factor,
