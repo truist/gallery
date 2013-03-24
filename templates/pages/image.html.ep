@@ -1,0 +1,4 @@
+% layout 'default';
+% title 'Gallery';
+<img src="<%= $path %>" />
+<p><%= $name %></p>
