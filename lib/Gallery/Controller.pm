@@ -3,7 +3,6 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Mojolicious::Static;
 
-use Image::Magick;
 use Data::Dumper;
 use List::Util 'shuffle';
 
@@ -37,7 +36,7 @@ sub route {
 	if ($target{image}) {
 		return $self->render(
 			template => 'pages/image',
-			path => "/$target{album}/$target{image}?scaled=1",
+			image => ["/$target{album}/$target{image}?scaled=1", "/$target{album}/$target{image}?raw=1"],
 			name => $target{image},
 		);
 	} else {

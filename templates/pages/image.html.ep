@@ -1,4 +1,4 @@
 % layout 'default';
 % title 'Gallery';
-<img src="<%= $path %>" />
+<a href="<%= $image->[1] %>"><img src="<%= $image->[0] %>" /></a>
 <p><%= $name %></p>

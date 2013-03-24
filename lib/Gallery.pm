@@ -5,6 +5,7 @@ use File::Basename;
 use File::Path 'make_path';
 use IO::Handle;
 use List::Util 'min';
+use Image::Imlib2;
 
 our $albums_dir = '/home/truist/sites/rainskit.com/gallery/content/albums';
 my $cache_dir = '/home/truist/devel/gallery/cache';
@@ -69,23 +70,13 @@ sub resize_image {
 	my $new_path = "$dest_dir/$new_name";
 	return $new_name if -e $new_path;
 
-	my $image = Image::Magick->new();
-	my $error = $image->Read($cur_path);
-	STDERR->print("error reading $cur_path: $error\n") if $error;
-	return if $error;
+	my $image = Image::Imlib2->load($cur_path);
+	my $width  = $image->width();
+	my $height = $image->height();
 
-	my ($width, $height) = $image->Get('width', 'height');
 	if ($square) {
 		my $size = min($width, $height);
-STDOUT->print("ABOUT TO CROP $cur_path\n");
-		$error = $image->Crop(
-			x => ($width - $size) / 2,
-			y => ($height - $size) / 2,
-			width => $size,
-			height => $size,
-		);
-		STDERR->print("error cropping image: $error") if $error;
-		return if $error;
+		$image = $image->crop(($width - $size) / 2, ($height - $size) / 2, $size, $size);
 		$width = $height = $size;
 	}
 
@@ -95,18 +86,10 @@ STDOUT->print("ABOUT TO CROP $cur_path\n");
 	my $scale_factor = min($width_factor, $height_factor);
 
 	if ($scale_factor < 1) {
-STDOUT->print("ABOUT TO SCALE $cur_path\n");
-		$error = $image->Scale(
-			width => $width * $scale_factor,
-			height => $height * $scale_factor,
-		);
-		STDERR->print("error resizing image: $error") if "$error";
-		return if $error;
+		$image = $image->create_scaled_image($width * $scale_factor, $height * $scale_factor);
 
 		make_path($dest_dir);
-		$error = $image->Write($new_path);
-		STDERR->print("error writing image: $error") if "$error";
-		return if $error;
+		$image->save($new_path);
 	} else {
 		symlink($cur_path, $new_path);
 	}
