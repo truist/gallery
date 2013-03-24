@@ -33,10 +33,11 @@ sub route {
 		);
 	}
 
+	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
 	if ($target{image}) {
 		return $self->render(
 			template => 'pages/image',
-			image => ["/$target{album}/$target{image}?scaled=1", "/$target{album}/$target{image}?raw=1"],
+			image => ["$basepath$target{image}?scaled=1", "$basepath$target{image}?raw=1"],
 			name => $target{image},
 		);
 	} else {
@@ -47,10 +48,10 @@ sub route {
 			next if $entry =~ /^\./;
 			if (-d "$album_dir/$entry") {
 				if (my $highlight = $self->pick_subalbum_highlight("$album_dir/$entry")) {
-					push(@subalbums, ["/$target{album}/$entry/$highlight?thumb=1" => "/$target{album}/$entry/"]);
+					push(@subalbums, ["$basepath$entry/$highlight?thumb=1" => "$basepath$entry/"]);
 				}
 			} else {
-				push(@images, ["/$target{album}/$entry?thumb=1" => "/$target{album}/$entry"]);
+				push(@images, ["$basepath$entry?thumb=1" => "$basepath$entry"]);
 			}
 		}
 		closedir $dh;
