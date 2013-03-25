@@ -3,5 +3,11 @@
 	<a href="<%= $ancestor->{link} %>"><%= $ancestor->{name} %></a>
 % }
 % if ($name) {
-	<br /><%= $name %>
+	<br /><%= $name %><br />
+% }
+% if (stash->{prev}) {
+	<a href="<%= stash->{prev} %>">prev</a><br />
+% }
+% if (stash->{next}) {
+	<a href="<%= stash->{next} %>">next</a><br />
 % }

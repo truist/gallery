@@ -18,54 +18,9 @@ sub route {
 	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
 	my @parent_links = $self->generate_parent_links('/', %target);
 	if ($target{image}) {
-		return $self->render(
-			template => 'pages/image',
-			image => {
-				scaled => "$basepath$target{image}?scaled=1",
-				link => "$basepath$target{image}?raw=1",
-				name => $target{image},
-			},
-			name => $target{image},
-			title => "$Gallery::site_title | $target{album} | $target{image}",
-			parent_links => \@parent_links,
-		);
+		return $self->render_image_page(\%target, $basepath, \@parent_links);
 	} else {
-		my (@subalbums, @images);
-		my $album_dir = "$Gallery::albums_dir/$target{album}";
-		opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
-		while (my $entry = readdir $dh) {
-			next if $entry =~ /^\./;
-			if (-d "$album_dir/$entry") {
-				if (my $highlight = $self->pick_subalbum_highlight("$album_dir/$entry")) {
-					push(@subalbums, {
-						thumb => "$basepath$entry/$highlight?thumb=1",
-						link => "$basepath$entry/",
-						name => $entry,
-					});
-				}
-			} else {
-				push(@images, {
-					thumb => "$basepath$entry?thumb=1",
-					link => "$basepath$entry",
-					name => $entry,
-				});
-			}
-		}
-		closedir $dh;
-
-		@subalbums = sort { $a->{name} cmp $b->{name} } @subalbums;
-		@images = sort { $a->{name} cmp $b->{name} } @images;
-		pop(@parent_links) if @parent_links; # don't include the current album
-		my @albums = split(/\//, $target{album});
-		my $name = (@albums ? pop(@albums) : undef);
-		return $self->render(
-			template => 'pages/album',
-			subalbums => \@subalbums,
-			images => \@images,
-			name => $name,
-			title => "$Gallery::site_title | $target{album}",
-			parent_links => \@parent_links,
-		);
+		return $self->render_album_page(\%target, $basepath, \@parent_links);
 	}
 }
 
@@ -124,6 +79,92 @@ sub generate_parent_links {
 	}
 	return @links;
 }
+
+sub render_image_page {
+	my ($self, $target, $basepath, $parent_links) = @_;
+	my %target = %$target;
+	my @parent_links = @$parent_links;
+
+	my $album_dir = "$Gallery::albums_dir/$target{album}";
+	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
+	my @files = sort(grep { !/^\./ && -f "$album_dir/$_" } readdir $dh);
+	closedir $dh;
+
+	my ($prev, $next, $found_it);
+	foreach my $each (@files) {
+		if ($found_it) {
+			$next = $each;
+			last;
+		} elsif ($each eq $target{image}) {
+			$found_it = 1;
+		} else {
+			$prev = $each;
+		}
+	}
+	$prev = "$basepath$prev" if $prev;
+	$next = "$basepath$next" if $next;
+
+	return $self->render(
+		template => 'pages/image',
+		image => {
+			scaled => "$basepath$target{image}?scaled=1",
+			link => "$basepath$target{image}?raw=1",
+			name => $target{image},
+		},
+		name => $target{image},
+		title => "$Gallery::site_title | $target{album} | $target{image}",
+		parent_links => \@parent_links,
+		prev => $prev,
+		next => $next,
+	);
+}
+
+
+sub render_album_page {
+	my ($self, $target, $basepath, $parent_links) = @_;
+	my %target = %$target;
+	my @parent_links = @$parent_links;
+
+	my (@subalbums, @images);
+	my $album_dir = "$Gallery::albums_dir/$target{album}";
+	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
+	while (my $entry = readdir $dh) {
+		next if $entry =~ /^\./;
+		if (-d "$album_dir/$entry") {
+			if (my $highlight = $self->pick_subalbum_highlight("$album_dir/$entry")) {
+				push(@subalbums, {
+					thumb => "$basepath$entry/$highlight?thumb=1",
+					link => "$basepath$entry/",
+					name => $entry,
+				});
+			}
+		} else {
+			push(@images, {
+				thumb => "$basepath$entry?thumb=1",
+				link => "$basepath$entry",
+				name => $entry,
+			});
+		}
+	}
+	closedir $dh;
+
+	@subalbums = sort { $a->{name} cmp $b->{name} } @subalbums;
+	@images = sort { $a->{name} cmp $b->{name} } @images;
+	pop(@parent_links) if @parent_links; # don't include the current album
+	my @albums = split(/\//, $target{album});
+	my $name = (@albums ? pop(@albums) : undef);
+
+	return $self->render(
+		template => 'pages/album',
+		subalbums => \@subalbums,
+		images => \@images,
+		name => $name,
+		title => "$Gallery::site_title | $target{album}",
+		parent_links => \@parent_links,
+	);
+}
+
+
 sub pick_subalbum_highlight {
 	my ($self, $subalbum) = @_;
 
