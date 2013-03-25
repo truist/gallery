@@ -7,6 +7,7 @@ use IO::Handle;
 use List::Util 'min';
 use Image::Imlib2;
 
+our $site_title = 'Old rainskit.com gallery';
 our $albums_dir = '/home/truist/sites/rainskit.com/gallery/content/albums';
 my $cache_dir = '/home/truist/devel/gallery/cache';
 my $scaled_width = 800;

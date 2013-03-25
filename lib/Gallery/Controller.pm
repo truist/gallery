@@ -13,6 +13,7 @@ sub route {
 
 	my %target = $self->split_path();
 
+	# handle direct requests for images
 	if ($target{raw}) {
 		Gallery::cache_raw_image(%target);
 		return $self->rendered() if $self->app->static->serve_asset(
@@ -33,6 +34,7 @@ sub route {
 		);
 	}
 
+	# OK, all remaining requests must be for a page
 	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
 	if ($target{image}) {
 		return $self->render(
@@ -42,6 +44,7 @@ sub route {
 				link => "$basepath$target{image}?raw=1",
 				name => $target{image},
 			},
+			title => "$Gallery::site_title | $target{album} | $target{image}",
 		);
 	} else {
 		my (@subalbums, @images);
@@ -72,6 +75,7 @@ sub route {
 			template => 'pages/album',
 			subalbums => \@subalbums,
 			images => \@images,
+			title => "$Gallery::site_title | $target{album}",
 		);
 	}
 }

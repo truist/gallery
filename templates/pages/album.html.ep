@@ -1,5 +1,4 @@
 % layout 'default';
-% title 'Gallery';
 <% foreach my $subalbum (@$subalbums) { %>
 	<div class="album_thumb">
 		<a href="<%= $subalbum->{link} %>"><img src="<%= $subalbum->{thumb} %>" /></a>
