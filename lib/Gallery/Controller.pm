@@ -13,29 +13,10 @@ sub route {
 
 	my %target = $self->split_path();
 
-	# handle direct requests for images
-	if ($target{raw}) {
-		Gallery::cache_raw_image(%target);
-		return $self->rendered() if $self->app->static->serve_asset(
-			$self,
-			$self->app->static->file(".originals/$target{album}/$target{image}"),
-		);
-	} elsif ($target{scaled}) {
-		my $new_name = Gallery::cache_scaled_image(%target);
-		return $self->rendered() if $self->app->static->serve_asset(
-			$self,
-			$self->app->static->file("$target{album}/$new_name"),
-		);
-	} elsif ($target{thumb}) {
-		my $new_name = Gallery::cache_thumb_image(%target);
-		return $self->rendered() if $self->app->static->serve_asset(
-			$self,
-			$self->app->static->file("$target{album}/$new_name"),
-		);
-	}
+	return $self->rendered() if $self->handle_direct_image_request(%target);
 
-	# OK, all remaining requests must be for a page
 	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
+	my @parent_links = $self->generate_parent_links('/', %target);
 	if ($target{image}) {
 		return $self->render(
 			template => 'pages/image',
@@ -44,7 +25,9 @@ sub route {
 				link => "$basepath$target{image}?raw=1",
 				name => $target{image},
 			},
+			name => $target{image},
 			title => "$Gallery::site_title | $target{album} | $target{image}",
+			parent_links => \@parent_links,
 		);
 	} else {
 		my (@subalbums, @images);
@@ -69,13 +52,19 @@ sub route {
 			}
 		}
 		closedir $dh;
+
 		@subalbums = sort { $a->{name} cmp $b->{name} } @subalbums;
 		@images = sort { $a->{name} cmp $b->{name} } @images;
+		pop(@parent_links) if @parent_links; # don't include the current album
+		my @albums = split(/\//, $target{album});
+		my $name = (@albums ? pop(@albums) : undef);
 		return $self->render(
 			template => 'pages/album',
 			subalbums => \@subalbums,
 			images => \@images,
+			name => $name,
 			title => "$Gallery::site_title | $target{album}",
+			parent_links => \@parent_links,
 		);
 	}
 }
@@ -97,6 +86,44 @@ sub split_path {
 	);
 }
 
+sub handle_direct_image_request {
+	my ($self, %target) = @_;
+
+	if ($target{raw}) {
+		Gallery::cache_raw_image(%target);
+		return $self->app->static->serve_asset(
+			$self,
+			$self->app->static->file(".originals/$target{album}/$target{image}"),
+		);
+	} elsif ($target{scaled}) {
+		my $new_name = Gallery::cache_scaled_image(%target);
+		return $self->app->static->serve_asset(
+			$self,
+			$self->app->static->file("$target{album}/$new_name"),
+		);
+	} elsif ($target{thumb}) {
+		my $new_name = Gallery::cache_thumb_image(%target);
+		return $self->app->static->serve_asset(
+			$self,
+			$self->app->static->file("$target{album}/$new_name"),
+		);
+	}
+	return undef;
+}
+
+sub generate_parent_links {
+	my ($self, $basepath, %target) = @_;
+
+	my @links;
+	foreach my $ancestor (split(/\//, $target{album})) {
+		push(@links, {
+			name => $ancestor,
+			link => "$basepath$ancestor/",
+		});
+		$basepath = "$basepath$ancestor/";
+	}
+	return @links;
+}
 sub pick_subalbum_highlight {
 	my ($self, $subalbum) = @_;
 

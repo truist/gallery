@@ -1,0 +1,7 @@
+<a href="/"><%= $Gallery::site_title %></a>
+% foreach my $ancestor (@$parent_links) {
+	<a href="<%= $ancestor->{link} %>"><%= $ancestor->{name} %></a>
+% }
+% if ($name) {
+	<br /><%= $name %>
+% }
