@@ -37,8 +37,11 @@ sub route {
 	if ($target{image}) {
 		return $self->render(
 			template => 'pages/image',
-			image => ["$basepath$target{image}?scaled=1", "$basepath$target{image}?raw=1"],
-			name => $target{image},
+			image => {
+				scaled => "$basepath$target{image}?scaled=1",
+				link => "$basepath$target{image}?raw=1",
+				name => $target{image},
+			},
 		);
 	} else {
 		my (@subalbums, @images);
@@ -48,15 +51,23 @@ sub route {
 			next if $entry =~ /^\./;
 			if (-d "$album_dir/$entry") {
 				if (my $highlight = $self->pick_subalbum_highlight("$album_dir/$entry")) {
-					push(@subalbums, ["$basepath$entry/$highlight?thumb=1" => "$basepath$entry/"]);
+					push(@subalbums, {
+						thumb => "$basepath$entry/$highlight?thumb=1",
+						link => "$basepath$entry/",
+						name => $entry,
+					});
 				}
 			} else {
-				push(@images, ["$basepath$entry?thumb=1" => "$basepath$entry"]);
+				push(@images, {
+					thumb => "$basepath$entry?thumb=1",
+					link => "$basepath$entry",
+					name => $entry,
+				});
 			}
 		}
 		closedir $dh;
-		@subalbums = sort { $a->[0] cmp $b->[0] } @subalbums;
-		@images = sort { $a->[0] cmp $b->[0] } @images;
+		@subalbums = sort { $a->{name} cmp $b->{name} } @subalbums;
+		@images = sort { $a->{name} cmp $b->{name} } @images;
 		return $self->render(
 			template => 'pages/album',
 			subalbums => \@subalbums,

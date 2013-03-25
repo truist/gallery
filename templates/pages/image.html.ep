@@ -1,4 +1,4 @@
 % layout 'default';
 % title 'Gallery';
-<a href="<%= $image->[1] %>"><img src="<%= $image->[0] %>" /></a>
-<p><%= $name %></p>
+<a href="<%= $image->{link} %>"><img src="<%= $image->{scaled} %>" /></a>
+<p><%= $image->{name} %></p>
