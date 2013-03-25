@@ -1,0 +1,10 @@
+.album_thumb, .image_thumb {
+	float: left;
+	width: 150px;
+}
+.image_thumb {
+	height: 150px;
+}
+.album_thumb {
+	min-height: 200px;
+}
