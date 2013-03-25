@@ -2,6 +2,7 @@ package Gallery::Controller;
 use Mojo::Base 'Mojolicious::Controller';
 
 use Mojolicious::Static;
+use Mojo::Util;
 
 use Data::Dumper;
 use List::Util 'shuffle';
@@ -73,7 +74,7 @@ sub generate_parent_links {
 	foreach my $ancestor (split(/\//, $target{album})) {
 		push(@links, {
 			name => $ancestor,
-			link => "$basepath$ancestor/",
+			link => url_escape("$basepath$ancestor/"),
 		});
 		$basepath = "$basepath$ancestor/";
 	}
@@ -107,15 +108,15 @@ sub render_image_page {
 	return $self->render(
 		template => 'pages/image',
 		image => {
-			scaled => "$basepath$target{image}?scaled=1",
-			link => "$basepath$target{image}?raw=1",
+			scaled => url_escape("$basepath$target{image}?scaled=1"),
+			link => url_escape("$basepath$target{image}?raw=1"),
 			name => $target{image},
 		},
 		name => $target{image},
 		title => "$Gallery::site_title | $target{album} | $target{image}",
 		parent_links => \@parent_links,
-		prev => $prev,
-		next => $next,
+		prev => ($prev ? url_escape($prev) : undef),
+		next => ($next ? url_escape($next) : undef),
 	);
 }
 
@@ -133,15 +134,15 @@ sub render_album_page {
 		if (-d "$album_dir/$entry") {
 			if (my $highlight = $self->pick_subalbum_highlight("$album_dir/$entry")) {
 				push(@subalbums, {
-					thumb => "$basepath$entry/$highlight?thumb=1",
-					link => "$basepath$entry/",
+					thumb => url_escape("$basepath$entry/$highlight?thumb=1"),
+					link => url_escape("$basepath$entry/"),
 					name => $entry,
 				});
 			}
 		} else {
 			push(@images, {
-				thumb => "$basepath$entry?thumb=1",
-				link => "$basepath$entry",
+				thumb => url_escape("$basepath$entry?thumb=1"),
+				link => url_escape("$basepath$entry"),
 				name => $entry,
 			});
 		}
@@ -183,6 +184,10 @@ sub pick_subalbum_highlight {
 	}
 
 	return undef;
+}
+
+sub url_escape {
+	return Mojo::Util::url_escape(@_, '^A-Za-z0-9\-._~\/\?\=');
 }
 
 1;
