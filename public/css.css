@@ -1,10 +1,54 @@
-.album_thumb, .image_thumb {
+body {
+	background-color: #101010;
+}
+
+.content {
+	background-color: #181818;
+	/* 150px image, 20px padding, 10px margin, 2px border, times 6 */
+	max-width: 1092px;
+	border: 1px solid #202020;
+	margin: auto;
+	padding: 0 20px;
+}
+
+.thumb {
+	background-color: #181818;
+	margin: 5px;
+	padding: 10px;
+	border-top: 1px solid #202020;
+	border-left: 1px solid #202020;
 	float: left;
+	width: 150px; /* make our overflow: hidden; work */
+	position: relative; /* enable the position: absolute; below */
+}
+
+.thumb.album {
+	border-top: 1px solid #383838;
+	border-left: 1px solid #383838;
+}
+
+.thumb * {
+	margin: 0;
+	padding: 0;
+	display: block;
+	text-decoration: none;
+}
+
+.thumb p a {
+	position: absolute; /* position relative to the thumb div */
 	width: 150px;
+	bottom: 10px; /* undo the padding in the thumb div */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	background-color: black;
+	opacity: 0.6;
+	color: #bbb;
+	font-family: sans-serif;
 }
-.image_thumb {
-	height: 150px;
-}
-.album_thumb {
-	min-height: 200px;
+
+.thumb:hover p a {
+	opacity: 1;
+	background-color: #101010;
+	z-index: 1;
 }

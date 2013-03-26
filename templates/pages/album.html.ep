@@ -1,13 +1,21 @@
 % layout 'default';
 %= include 'partials/nav'
 % foreach my $subalbum (@$subalbums) {
-	<div class="album_thumb">
-		<a href="<%= $subalbum->{link} %>"><img src="<%= $subalbum->{thumb} %>" /></a>
-		<p><%= $subalbum->{name} %></p>
+	<div class="album thumb">
+		<a href="<%= $subalbum->{link} %>">
+			<img src="<%= $subalbum->{thumb} %>" width="<%= $Gallery::thumb_width %>" height="<%= $Gallery::thumb_height %>" />
+		</a>
+		<p>
+			<a href="<%= $subalbum->{link} %>">
+				<%= $subalbum->{name} %>
+			</a>
+		</p>
 	</div>
 % }
 % foreach my $image (@$images) {
-	<div class="image_thumb">
-		<a href="<%= $image->{link} %>"><img src="<%= $image->{thumb} %>" /></a>
+	<div class="image thumb">
+		<a href="<%= $image->{link} %>">
+			<img src="<%= $image->{thumb} %>" width="<%= $Gallery::thumb_width %>" height="<%= $Gallery::thumb_height %>" />
+		</a>
 	</div>
 % }

@@ -4,5 +4,7 @@
 		<title><%= title %></title>
 		<link rel="stylesheet" type="text/css" href="/css.css" />
 	</head>
-	<body><%= content %></body>
+	<body>
+		<div class="content"><%= content %><div style="clear: both" /></div>
+	</body>
 </html>

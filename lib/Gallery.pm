@@ -12,8 +12,8 @@ our $albums_dir = '/home/truist/sites/rainskit.com/gallery/content/albums';
 my $cache_dir = '/home/truist/devel/gallery/cache';
 my $scaled_width = 800;
 my $scaled_height = 600;
-my $thumb_width = 150;
-my $thumb_height = 150;
+our $thumb_width = 150;
+our $thumb_height = 150;
 my $thumb_square = 1;
 
 sub startup {
