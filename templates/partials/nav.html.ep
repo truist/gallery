@@ -1,15 +1,26 @@
-<div class="nav>
-	<a href="/"><%= $Gallery::site_title %></a>
-	% foreach my $ancestor (@$parent_links) {
-		<a href="<%= $ancestor->{link} %>"><%= $ancestor->{name} %></a>
+<div class="nav">
+	<div class="location">
+		<a href="/" class="ancestor"><%= $Gallery::site_title %></a>
+		% foreach my $ancestor (@$parent_links) {
+			| <a href="<%= $ancestor->{link} %>" class="ancestor"><%= $ancestor->{name} %></a>
+		% }
+		% if ($name) {
+			<p class="name"><%= $name %></p>
+		% }
+	</div>
+	% if (stash->{prev} || stash->{next}) {
+		<div class="prev_next">
+			% if (stash->{prev}) {
+				<a href="<%= stash->{prev} %>" class="prev">prev</a>
+			% } else {
+				<p class="prev">prev</p>
+			% }
+			% if (stash->{next}) {
+				<a href="<%= stash->{next} %>" class="next">next</a>
+			% } else {
+				<p class="next">next</p>
+			% }
+		</div>
 	% }
-	% if ($name) {
-		<br /><%= $name %><br />
-	% }
-	% if (stash->{prev}) {
-		<a href="<%= stash->{prev} %>">prev</a><br />
-	% }
-	% if (stash->{next}) {
-		<a href="<%= stash->{next} %>">next</a><br />
-	% }
+	<div style="clear: both"></div>
 </div>

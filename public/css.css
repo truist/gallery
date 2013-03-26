@@ -11,14 +11,72 @@ body {
 	padding: 0 20px;
 }
 
-.thumb {
+.nav {
+	color: #bbb;
+	font-family: 'PT Serif';
+	padding-bottom: 5px;
+	border-bottom: 2px dotted #777;
+	margin-bottom: 10px;
+	position: relative; /* enable the position: absolute; below */
+}
+
+.nav .location {
+	float: left;
+	margin-left: 5px;
+	margin-top: 10px;
+}
+
+.nav .location .ancestor {
+	text-decoration: none;
+	color: #86a1b6;
+	font-family: 'PT Sans';
+}
+
+.nav .location .name {
+	font-size: 2em;
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.nav .prev_next {
+	position: absolute;
+	bottom: 5px;
+	right: 5px;
+}
+
+.nav .prev_next a, .nav .prev_next p {
+	text-decoration: none;
+	font-family: 'PT Sans';
+	font-size: 1.5em;
+	display: inline;
+	margin: 0;
+	padding: 0.1em 0.7em;
+}
+
+.nav .prev_next a {
+	color: #86a1b6;
+}
+
+.nav .prev_next a:hover {
+	background-color: #333;
+}
+
+.thumb, .scaled img {
 	background-color: #181818;
 	margin: 5px;
 	padding: 10px;
-	border-top: 1px solid #202020;
-	border-left: 1px solid #202020;
+}
+
+.scaled img {
+	display: block;
+	margin: 10px auto;
+}
+
+.thumb {
 	float: left;
 	width: 150px; /* make our overflow: hidden; work */
+	border-top: 1px solid #202020;
+	border-left: 1px solid #202020;
 	position: relative; /* enable the position: absolute; below */
 }
 
@@ -27,7 +85,7 @@ body {
 	border-left: 1px solid #383838;
 }
 
-.thumb * {
+.thumb *, .scaled * {
 	margin: 0;
 	padding: 0;
 	display: block;
@@ -52,3 +110,4 @@ body {
 	background-color: #101010;
 	z-index: 1;
 }
+
