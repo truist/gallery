@@ -90,6 +90,7 @@ body {
 	padding: 0;
 	display: block;
 	text-decoration: none;
+	border: 0;
 }
 
 .thumb p a {
