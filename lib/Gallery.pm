@@ -8,8 +8,8 @@ use List::Util 'min';
 use Image::Imlib2;
 
 our $site_title = 'Old rainskit.com gallery';
-our $albums_dir = '/home/truist/sites/rainskit.com/gallery/content/albums';
-my $cache_dir = '/home/truist/devel/gallery/cache';
+our $albums_dir = '/home/truist/sites/rainskit.com/gallery/albums';
+my $cache_dir = '/home/truist/sites/rainskit.com/gallery/cache';
 my $scaled_width = 800;
 my $scaled_height = 600;
 our $thumb_width = 150;
