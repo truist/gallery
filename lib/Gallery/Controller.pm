@@ -31,7 +31,7 @@ sub split_path {
 	my $path = $self->stash('path');
 	my @parts = split('/', $path);
 	my $image;
-	$image = pop(@parts) if @parts && $parts[-1] =~ /\./;
+	$image = pop(@parts) if @parts && $parts[-1] =~ /\./ && $path !~ /\/$/;
 
 	return (
 		album => join('/', @parts),
