@@ -1,3 +1,5 @@
 % layout 'default';
-%= include 'partials/nav'
+<div class="nav image_page">
+	%= include 'partials/nav'
+</div>
 <div class="image scaled"><a href="<%= $image->{link} %>"><img src="<%= $image->{scaled} %>" /></a></div>

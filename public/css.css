@@ -8,7 +8,12 @@ body {
 	max-width: 1092px;
 	border: 1px solid #202020;
 	margin: auto;
-	padding: 0 20px;
+	padding: 0;
+}
+@media (min-width: 600px) {
+	.content {
+		padding: 0 0.5em;
+	}
 }
 
 .nav {
@@ -24,6 +29,9 @@ body {
 	float: left;
 	margin-left: 5px;
 	margin-top: 10px;
+	font-size: larger;
+	width: 100%;
+	max-width: 100%;
 }
 
 .nav .location .ancestor {
@@ -36,6 +44,13 @@ body {
 	font-size: 2em;
 	margin-top: 0;
 	margin-bottom: 0;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.nav.image_page .location .name {
+	max-width: 50%;
 }
 
 .nav .prev_next {
@@ -61,23 +76,33 @@ body {
 	background-color: #333;
 }
 
-.thumb, .scaled img {
-	background-color: #181818;
-	margin: 5px;
-	padding: 10px;
-}
-
 .scaled img {
+	background-color: #181818;
 	display: block;
 	margin: 10px auto;
+	padding: 10px;
+	max-width: 90%;
 }
 
 .thumb {
+	background-color: #181818;
 	float: left;
-	width: 150px; /* make our overflow: hidden; work */
+	/* width: 150px; /1* make our overflow: hidden; work *1/ */
 	border-top: 1px solid #202020;
 	border-left: 1px solid #202020;
 	position: relative; /* enable the position: absolute; below */
+	margin: 0px;
+	padding: 0px;
+}
+@media (min-width: 360px) {
+	.thumb {
+		padding: 10px;
+	}
+}
+@media (min-width: 600px) {
+	.thumb {
+		margin: 5px;
+	}
 }
 
 .thumb.album {
@@ -95,7 +120,7 @@ body {
 
 .thumb p a {
 	position: absolute; /* position relative to the thumb div */
-	width: 150px;
+	width: 88%;
 	bottom: 10px; /* undo the padding in the thumb div */
 	white-space: nowrap;
 	overflow: hidden;
