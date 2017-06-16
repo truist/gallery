@@ -45,26 +45,22 @@ sub split_path {
 sub handle_direct_image_request {
 	my ($self, %target) = @_;
 
+	my $new_name;
+	my $path_prefix = '';
 	if ($target{raw}) {
-		Gallery::cache_raw_image(%target);
-		return $self->app->static->serve_asset(
-			$self,
-			$self->app->static->file(".originals/$target{album}/$target{image}"),
-		);
+		$new_name = Gallery::rotate_and_cache_raw_image(%target);
+		$path_prefix = "$Gallery::rotated_dir/";
 	} elsif ($target{scaled}) {
-		my $new_name = Gallery::cache_scaled_image(%target);
-		return $self->app->static->serve_asset(
-			$self,
-			$self->app->static->file("$target{album}/$new_name"),
-		);
+		$new_name = Gallery::cache_scaled_image(%target);
 	} elsif ($target{thumb}) {
-		my $new_name = Gallery::cache_thumb_image(%target);
-		return $self->app->static->serve_asset(
-			$self,
-			$self->app->static->file("$target{album}/$new_name"),
-		);
+		$new_name = Gallery::cache_thumb_image(%target);
+	} else {
+		return undef;
 	}
-	return undef;
+	return $self->app->static->serve_asset(
+		$self,
+		$self->app->static->file("$path_prefix$target{album}/$new_name"),
+	);
 }
 
 sub generate_parent_links {

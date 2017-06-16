@@ -6,10 +6,16 @@ use File::Path 'make_path';
 use IO::Handle;
 use List::Util 'min';
 use Image::Imlib2;
+use Image::JpegTran::AutoRotate;
+
 
 our $site_title = 'Old rainskit.com gallery';
 our $albums_dir = '/srv/http/rainskit.com/gallery/albums';
 my $cache_dir = '/srv/http/rainskit.com/gallery/cache';
+our $rotated_dir = '.rotated';
+# These are "landscape" not because we assume all pictures are landscape,
+# but because we assume most monitors are landscape. That's probably not
+# accurate in today's mobile world, though.
 my $scaled_width = 800;
 my $scaled_height = 600;
 our $thumb_width = 150;
@@ -30,22 +36,31 @@ sub startup {
 	$router->get('/*path')->to('controller#route');
 }
 
-sub cache_raw_image {
+sub rotate_and_cache_raw_image {
 	my (%target) = @_;
 
 	my $cur_path = "$albums_dir/$target{album}/$target{image}";
-	my $dest_dir = "$cache_dir/.originals/$target{album}";
+	my $dest_dir = "$cache_dir/$rotated_dir/$target{album}";
 	make_path($dest_dir);
 	my $new_path = "$dest_dir/$target{image}";
-	symlink($cur_path, $new_path) unless -e $new_path;
+
+	if (! -e $new_path) {
+		if (auto_rotate($cur_path => $new_path) < 1) {
+			symlink($cur_path, $new_path);
+		}
+	}
+
+	return $target{image};
 }
 
 sub cache_scaled_image {
 	my (%target) = @_;
 
+	$target{image} = rotate_and_cache_raw_image(%target);
+
 	my ($name, $path, $extension) = fileparse($target{image}, qr/\.[^.]*/);
 	return resize_image(
-		"$albums_dir/$target{album}", $name, $extension,
+		"$cache_dir/$rotated_dir/$target{album}", $name, $extension,
 		$scaled_width, $scaled_height, 0,
 		"$cache_dir/$target{album}",
 	);
@@ -54,9 +69,11 @@ sub cache_scaled_image {
 sub cache_thumb_image {
 	my (%target) = @_;
 
+	$target{image} = rotate_and_cache_raw_image(%target);
+
 	my ($name, $path, $extension) = fileparse($target{image}, qr/\.[^.]*/);
 	return resize_image(
-		"$albums_dir/$target{album}", $name, $extension,
+		"$cache_dir/$rotated_dir/$target{album}", $name, $extension,
 		$thumb_width, $thumb_height, $thumb_square,
 		"$cache_dir/$target{album}",
 	);
