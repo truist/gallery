@@ -98,7 +98,13 @@ sub resize_image {
 
 	if ($square) {
 		my $size = min($width, $height);
-		$image = $image->crop(($width - $size) / 2, ($height - $size) / 2, $size, $size);
+		if ($size > $max_width && $size > $max_height) {
+			$image = $image->crop(($width - $size) / 2, ($height - $size) / 2, $size, $size);
+		} else {
+			my $cropped_width = min($width, $max_width);
+			my $cropped_height = min($height, $max_height);
+			$image = $image->crop(($width - $cropped_width) / 2, ($height - $cropped_height) / 2, $cropped_width, $cropped_height);
+		}
 		$width = $height = $size;
 	}
 
@@ -110,6 +116,12 @@ sub resize_image {
 	if ($scale_factor < 1) {
 		$image = $image->create_scaled_image($width * $scale_factor, $height * $scale_factor);
 
+		make_path($dest_dir);
+		$image->save($new_path);
+	} elsif ($square) {
+		# we hit this case if the image is to be squared and just one dimension
+		# was smaller than the square size, so we still need to crop the other
+		# dimension (which was done above, but now we need to save it)
 		make_path($dest_dir);
 		$image->save($new_path);
 	} else {
