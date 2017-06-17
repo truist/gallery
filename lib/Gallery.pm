@@ -45,8 +45,11 @@ sub rotate_and_cache_raw_image {
 	my $new_path = "$dest_dir/$target{image}";
 
 	if (! -e $new_path) {
+		# auto_rotate() has tricky return codes;
+		# 1 means success; -1 means doesn't need rotated; undef means error
+		# since -1 evaluates to true, we can't just `if (auto_rotate())`
 		my $result = auto_rotate($cur_path => $new_path);
-		if (! defined $result || $result < 1) {  # result can be 1, -1, or undef
+		unless (defined $result && $result > 0) {
 			symlink($cur_path, $new_path);
 		}
 	}
