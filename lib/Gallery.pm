@@ -45,7 +45,8 @@ sub rotate_and_cache_raw_image {
 	my $new_path = "$dest_dir/$target{image}";
 
 	if (! -e $new_path) {
-		if (auto_rotate($cur_path => $new_path) < 1) {
+		my $result = auto_rotate($cur_path => $new_path);
+		if (! defined $result || $result < 1) {  # result can be 1, -1, or undef
 			symlink($cur_path, $new_path);
 		}
 	}
