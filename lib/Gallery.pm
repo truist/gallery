@@ -10,15 +10,19 @@ use Image::JpegTran::AutoRotate;
 
 
 our $site_title = 'Old rainskit.com gallery';
+
 our $albums_dir = '/srv/http/rainskit.com/gallery/albums';
 our $highlight_filename =  '#highlight';
+
 my $cache_dir = '/srv/http/rainskit.com/gallery/cache';
 our $rotated_dir = '.rotated';
+
 # These are "landscape" not because we assume all pictures are landscape,
 # but because we assume most monitors are landscape. That's probably not
 # accurate in today's mobile world, though.
 my $scaled_width = 800;
 my $scaled_height = 600;
+
 our $thumb_width = 150;
 our $thumb_height = 150;
 my $thumb_square = 1;
