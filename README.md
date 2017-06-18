@@ -14,7 +14,7 @@ cached images are auto-rotated per the orientation EXIF settings,
 so you don't have to worry about pre-rotating them.
 
 You can tweak a few aspects of the gallery via variables in the
-source, or custom CSS, if you like.
+source, or add custom CSS, if you like.
 
 The one (optional!) feature that requires some additional effort
 is that you can define a "highlight" image (or sub-album) for each
@@ -79,6 +79,8 @@ You can see a working example at <https://gallery.rainskit.com/>.
     1. Add any site-specific static content (like `favicon.ico`)
        to `public/`.
 
-    1. If you want to get fancy, customize `public/css.css`
-       and/or the files in `templates/` to your liking.
+    1. Configure any site-specific CSS in `public/local.css`.
+
+    1. If you want to get fancy, customize the files in `templates/`
+       to your liking.
 
