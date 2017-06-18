@@ -5,11 +5,11 @@ use Mojolicious::Static;
 use Mojo::Util;
 
 use Data::Dumper;
-use List::Util 'shuffle';
+use List::Util qw{shuffle first};
 
 use Gallery;
 
-my $highlight_regex = qr{^_highlight(\..+)?$};
+my $highlight_regex = qr{^\Q$Gallery::highlight_filename\E$};
 
 sub route {
 	my ($self) = @_;
@@ -173,9 +173,9 @@ sub pick_subalbum_highlight {
 	closedir $dh;
 	die "dir has no contents: $subalbum" unless @entries;
 
-	my @highlight = grep { /$highlight_regex/ } @entries;
-	if (@highlight) {
-		my $highlight = $highlight[0];
+	my $highlight = first { /$highlight_regex/ } @entries;
+	if ($highlight && -l "$subalbum/$highlight") {
+		$highlight = readlink("$subalbum/$highlight");
 		return $highlight if -f "$subalbum/$highlight";
 		if (-d "$subalbum/$highlight") {
 			my $deeper_highlight = $self->pick_subalbum_highlight("$subalbum/$highlight");

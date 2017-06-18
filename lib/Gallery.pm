@@ -11,6 +11,7 @@ use Image::JpegTran::AutoRotate;
 
 our $site_title = 'Old rainskit.com gallery';
 our $albums_dir = '/srv/http/rainskit.com/gallery/albums';
+our $highlight_filename =  '#highlight';
 my $cache_dir = '/srv/http/rainskit.com/gallery/cache';
 our $rotated_dir = '.rotated';
 # These are "landscape" not because we assume all pictures are landscape,
