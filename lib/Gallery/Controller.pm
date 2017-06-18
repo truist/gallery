@@ -9,6 +9,8 @@ use List::Util 'shuffle';
 
 use Gallery;
 
+my $highlight_regex = qr{^_highlight(\..+)?$};
+
 sub route {
 	my ($self) = @_;
 
@@ -127,6 +129,7 @@ sub render_album_page {
 	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
 	while (my $entry = readdir $dh) {
 		next if $entry =~ /^\./;
+		next if $entry =~ /$highlight_regex/;
 		if (-d "$album_dir/$entry") {
 			if (my $highlight = $self->pick_subalbum_highlight("$album_dir/$entry")) {
 				push(@subalbums, {
@@ -166,9 +169,21 @@ sub pick_subalbum_highlight {
 	my ($self, $subalbum) = @_;
 
 	opendir(my $dh, $subalbum) or die "unable to list $subalbum: $!";
-	my @entries = shuffle(grep { !/^\./ } readdir $dh);
+	my @entries = grep { !/^\./ } readdir $dh;
 	closedir $dh;
 	die "dir has no contents: $subalbum" unless @entries;
+
+	my @highlight = grep { /$highlight_regex/ } @entries;
+	if (@highlight) {
+		my $highlight = $highlight[0];
+		return $highlight if -f "$subalbum/$highlight";
+		if (-d "$subalbum/$highlight") {
+			my $deeper_highlight = $self->pick_subalbum_highlight("$subalbum/$highlight");
+			return "$highlight/$deeper_highlight" if $deeper_highlight;
+		}
+	}
+
+	@entries = shuffle(@entries);
 
 	foreach my $entry (@entries) {
 		return $entry if -f "$subalbum/$entry";
