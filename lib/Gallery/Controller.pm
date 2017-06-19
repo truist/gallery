@@ -86,7 +86,7 @@ sub render_image_page {
 
 	my $album_dir = "$Gallery::albums_dir/$target{album}";
 	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
-	my @files = sort(grep { !/^\./ && -f "$album_dir/$_" } readdir $dh);
+	my @files = sort(grep { !/^\./ && !/$highlight_regex/ && -f "$album_dir/$_" } readdir $dh);
 	closedir $dh;
 
 	my ($prev, $next, $found_it);
@@ -108,10 +108,9 @@ sub render_image_page {
 		image => {
 			scaled => url_escape("$basepath$target{image}?scaled=1"),
 			link => url_escape("$basepath$target{image}?raw=1"),
-			name => $target{image},
 		},
-		name => $target{image},
-		title => "$Gallery::site_title | $target{album} | $target{image}",
+		name => '',
+		title => "$Gallery::site_title | $target{album}",
 		parent_links => \@parent_links,
 		prev => ($prev ? url_escape($prev) : undef),
 		next => ($next ? url_escape($next) : undef),

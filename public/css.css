@@ -49,10 +49,6 @@ body {
 	text-overflow: ellipsis;
 }
 
-.nav.image_page .location .name {
-	max-width: 50%;
-}
-
 .nav .prev_next {
 	position: absolute;
 	bottom: 5px;
@@ -74,6 +70,41 @@ body {
 
 .nav .prev_next a:hover {
 	background-color: #333;
+}
+
+.image.scaled {
+	position: relative; /* makes the .image_nav positioning work */
+}
+.image_nav {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	font-size: 4em;
+	width: 1em;
+	text-align: center;
+	color: grey;
+	background-color: black;
+}
+.image.scaled .image_nav {
+	opacity: 0;
+	transition: opacity 0.5s;
+}
+@media (min-width: 750px) {
+	.image.scaled:hover .image_nav {
+		opacity: 0.5;
+	}
+}
+.image_nav.prev {
+	left: 0;
+}
+.image_nav.next {
+	right: 0;
+}
+.image_nav p {
+	position: absolute;
+	top: 40%;
+	left: 0;
+	right: 0;
 }
 
 .scaled img {
@@ -113,9 +144,11 @@ body {
 .thumb *, .scaled * {
 	margin: 0;
 	padding: 0;
-	display: block;
 	text-decoration: none;
 	border: 0;
+}
+.thumb img {
+	display: block;
 }
 
 .thumb p a {

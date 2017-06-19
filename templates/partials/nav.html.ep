@@ -7,18 +7,4 @@
 			<p class="name"><%= $name %></p>
 		% }
 	</div>
-	% if (stash->{prev} || stash->{next}) {
-		<div class="prev_next">
-			% if (stash->{prev}) {
-				<a href="<%= stash->{prev} %>" class="prev">prev</a>
-			% } else {
-				<p class="prev">prev</p>
-			% }
-			% if (stash->{next}) {
-				<a href="<%= stash->{next} %>" class="next">next</a>
-			% } else {
-				<p class="next">next</p>
-			% }
-		</div>
-	% }
 	<div style="clear: both"></div>

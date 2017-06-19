@@ -2,4 +2,28 @@
 <div class="nav image_page">
 	%= include 'partials/nav'
 </div>
-<div class="image scaled"><a href="<%= $image->{link} %>"><img src="<%= $image->{scaled} %>" /></a></div>
+<div class="image scaled">
+	<a href="<%= $image->{link} %>">
+		<img src="<%= $image->{scaled} %>" />
+	</a>
+	% if (stash->{prev}) {
+		<a href="<%= stash->{prev} %>" class="image_nav prev">
+			<p>&lt;</p>
+		</a>
+		<script>
+			$(".image").on("swiperight", function() {
+				window.location.href = '<%= stash->{prev} %>'
+			});
+		</script>
+	% }
+	% if (stash->{next}) {
+		<a href="<%= stash->{next} %>" class="image_nav next">
+			<p>&gt;</p>
+		</a>
+		<script>
+			$(".image").on("swipeleft", function() {
+				window.location.href = '<%= stash->{next} %>'
+			});
+		</script>
+	% }
+</div>
