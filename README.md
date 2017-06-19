@@ -5,7 +5,8 @@ This is a simple (Perl-based) image gallery for static images. Once
 set up, it is extremely simple to use - just drop a bunch of images
 into a directory and they will be served up with a reasonable layout
 (including mobile support), reasonable thumbnails, and reasonable
-navigation. The original images will never be modified in any way.
+navigation (including mobile swipe support). The original images
+will never be modified in any way.
 
 It uses caches that are generated on-the-fly to improve performance,
 but even un-cached loads are reasonably fast. The entire cache can
@@ -13,8 +14,8 @@ be wiped at any time and it will just regenerate as needed. The
 cached images are auto-rotated per the orientation EXIF settings,
 so you don't have to worry about pre-rotating them.
 
-You can tweak a few aspects of the gallery via variables in the
-source, or add custom CSS, if you like.
+The gallery is somewhat configurable; see `gallery.conf.default`.
+You can also configure CSS via `local.css`.
 
 The one (optional!) feature that requires some additional effort
 is that you can define a "highlight" image (or sub-album) for each
@@ -49,8 +50,8 @@ You can see a working example at <https://gallery.rainskit.com/>.
     1. The various perl modules this project depends on (see below)
         1. Findable by your web server user
 
-1. Configure the variables at the top of `lib/Gallery.pm` to
-   match the filesystem choices made in the prior step.
+1. Copy `gallery.conf.default` to `gallery.conf` and set the
+   variables to match the filesystem choices made above.
 
 1. Run the built-in web server, `script/gallery`:
 
@@ -73,14 +74,11 @@ You can see a working example at <https://gallery.rainskit.com/>.
 
 1. Customize the site to your preferences:
 
-    1. Configure the rest of the variables in `lib/Gallery.pm` to
+    1. Configure the rest of the variables in `gallery.conf` to
        your liking. (You'll need to restart the site, if you do.)
 
     1. Add any site-specific static content (like `favicon.ico`)
        to `public/`.
 
     1. Configure any site-specific CSS in `public/local.css`.
-
-    1. If you want to get fancy, customize the files in `templates/`
-       to your liking.
 

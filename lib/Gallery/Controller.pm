@@ -7,9 +7,9 @@ use Mojo::Util;
 use Data::Dumper;
 use List::Util qw{shuffle first};
 
-use Gallery;
+use Gallery qw(cache_image_as_needed $config);
 
-my $highlight_regex = qr{^\Q$Gallery::highlight_filename\E$};
+my $highlight_regex = qr{^\Q$config->{highlight_filename}\E$};
 
 sub route {
 	my ($self) = @_;
@@ -47,21 +47,11 @@ sub split_path {
 sub handle_direct_image_request {
 	my ($self, %target) = @_;
 
-	my $new_name;
-	my $path_prefix = '';
-	if ($target{raw}) {
-		$new_name = Gallery::rotate_and_cache_raw_image(%target);
-		$path_prefix = "$Gallery::rotated_dir/";
-	} elsif ($target{scaled}) {
-		$new_name = Gallery::cache_scaled_image(%target);
-	} elsif ($target{thumb}) {
-		$new_name = Gallery::cache_thumb_image(%target);
-	} else {
-		return undef;
-	}
+	my $cached_path = cache_image_as_needed(%target);
+	return unless $cached_path;
 	return $self->app->static->serve_asset(
 		$self,
-		$self->app->static->file("$path_prefix$target{album}/$new_name"),
+		$self->app->static->file($cached_path),
 	);
 }
 
@@ -84,7 +74,7 @@ sub render_image_page {
 	my %target = %$target;
 	my @parent_links = @$parent_links;
 
-	my $album_dir = "$Gallery::albums_dir/$target{album}";
+	my $album_dir = "$config->{albums_dir}/$target{album}";
 	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
 	my @files = sort(grep { !/^\./ && !/$highlight_regex/ && -f "$album_dir/$_" } readdir $dh);
 	closedir $dh;
@@ -110,7 +100,7 @@ sub render_image_page {
 			link => url_escape("$basepath$target{image}?raw=1"),
 		},
 		name => '',
-		title => "$Gallery::site_title | $target{album}",
+		title => "$config->{site_title} | $target{album}",
 		parent_links => \@parent_links,
 		prev => ($prev ? url_escape($prev) : undef),
 		next => ($next ? url_escape($next) : undef),
@@ -124,7 +114,7 @@ sub render_album_page {
 	my @parent_links = @$parent_links;
 
 	my (@subalbums, @images);
-	my $album_dir = "$Gallery::albums_dir/$target{album}";
+	my $album_dir = "$config->{albums_dir}/$target{album}";
 	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
 	while (my $entry = readdir $dh) {
 		next if $entry =~ /^\./;
@@ -158,7 +148,7 @@ sub render_album_page {
 		subalbums => \@subalbums,
 		images => \@images,
 		name => $name,
-		title => "$Gallery::site_title | $target{album}",
+		title => "$config->{site_title} | $target{album}",
 		parent_links => \@parent_links,
 	);
 }

@@ -1,5 +1,5 @@
 	<div class="location">
-		<a href="/" class="ancestor"><%= $Gallery::site_title %></a>
+		<a href="/" class="ancestor"><%= $config->{site_title} %></a>
 		% foreach my $ancestor (@$parent_links) {
 			| <a href="<%= $ancestor->{link} %>" class="ancestor"><%= $ancestor->{name} %></a>
 		% }

@@ -1,0 +1,26 @@
+#!/usr/bin/env perl
+
+# copy this file to gallery.conf and edit to your liking
+
+{
+	# set these, at least:
+	site_title => 'YOUR SITE TITLE',
+	albums_dir => '/path/to/your/original/images',
+	cache_dir => '/path/to/a/cache/dir',
+
+	# override the rest of these if you like:
+
+	# highlight_filename => '#highlight',
+	# rotated_dir => '.rotated',
+
+	# These are "landscape" not because we assume all pictures are landscape,
+	# but because we assume most monitors are landscape. That's probably not
+	# accurate in today's mobile world, though.
+	# scaled_width => 800,
+	# scaled_height => 600,
+
+	# thumb_width => 150,
+	# thumb_height => 150,
+	# thumb_square => 1,
+};
+
