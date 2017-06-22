@@ -9,7 +9,7 @@ use Image::Imlib2;
 use Image::JpegTran::AutoRotate;
 
 use Exporter 'import';
-our @EXPORT_OK = qw(cache_image_as_needed $config);
+our @EXPORT_OK = qw(cache_image_as_needed exifdate $config);
 
 our $config;
 
@@ -24,6 +24,7 @@ sub startup {
 
 				albums_dir => '/path/to/your/original/images',
 				highlight_filename => '#highlight',
+				sort_images_by => 'name',
 
 				cache_dir => '/path/to/a/cache/dir',
 				rotated_dir => '.rotated',
@@ -159,5 +160,24 @@ sub resize_image {
 	return $new_name;
 }
 
+sub exifdate {
+	my ($image_path) = @_;
+
+	return 'unused' unless 'date' eq $config->{sort_images_by};
+
+	eval q{use Image::ExifTool}; die "$@" if $@;
+	eval q{use Date::Parse}; die "$@" if $@;
+
+	my $exiftool = Image::ExifTool->new();
+	$exiftool->ExtractInfo($image_path, {})
+		or die "couldn't extract info for $image_path: $!";
+	my $date = $exiftool->GetValue('DateTimeOriginal', 'ValueConv');
+	$date = $exiftool->GetValue('FileModifyDate', 'ValueConv')
+		unless defined $date;
+	$date = (stat $image_path)[9]
+		unless defined $date;
+
+	return str2time($date);
+}
 
 1;

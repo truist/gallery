@@ -7,7 +7,7 @@ use Mojo::Util;
 use Data::Dumper;
 use List::Util qw{shuffle first};
 
-use Gallery qw(cache_image_as_needed $config);
+use Gallery qw(cache_image_as_needed exifdate $config);
 
 my $highlight_regex = qr{^\Q$config->{highlight_filename}\E$};
 
@@ -132,13 +132,14 @@ sub render_album_page {
 				thumb => url_escape("$basepath$entry?thumb=1"),
 				link => url_escape("$basepath$entry"),
 				name => $entry,
+				date => exifdate("$album_dir/$entry"),
 			});
 		}
 	}
 	closedir $dh;
 
 	@subalbums = sort { $a->{name} cmp $b->{name} } @subalbums;
-	@images = sort { $a->{name} cmp $b->{name} } @images;
+	@images = sort { $a->{$config->{sort_images_by}} cmp $b->{$config->{sort_images_by}} } @images;
 	pop(@parent_links) if @parent_links; # don't include the current album
 	my @albums = split(/\//, $target{album});
 	my $name = (@albums ? pop(@albums) : undef);
