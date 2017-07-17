@@ -48,10 +48,15 @@ sub startup {
 sub cache_image_as_needed {
 	my (%target) = @_;
 
+	my $cur_path = "$config->{albums_dir}/$target{album}/$target{image}";
+	return undef unless -f $cur_path;
+
+	rotate_and_cache_raw_image(%target);
+
 	my $new_name;
 	my $path_prefix = '';
 	if ($target{raw}) {
-		$new_name = rotate_and_cache_raw_image(%target);
+		$new_name = $target{image};
 		$path_prefix = "$config->{rotated_dir}/";
 	} elsif ($target{scaled}) {
 		$new_name = cache_scaled_image(%target);
@@ -82,14 +87,10 @@ sub rotate_and_cache_raw_image {
 			symlink($cur_path, $new_path);
 		}
 	}
-
-	return $target{image};
 }
 
 sub cache_scaled_image {
 	my (%target) = @_;
-
-	$target{image} = rotate_and_cache_raw_image(%target);
 
 	my ($name, $path, $extension) = fileparse($target{image}, qr/\.[^.]*/);
 	return resize_image(
@@ -101,8 +102,6 @@ sub cache_scaled_image {
 
 sub cache_thumb_image {
 	my (%target) = @_;
-
-	$target{image} = rotate_and_cache_raw_image(%target);
 
 	my ($name, $path, $extension) = fileparse($target{image}, qr/\.[^.]*/);
 	return resize_image(
