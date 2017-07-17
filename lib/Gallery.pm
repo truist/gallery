@@ -8,6 +8,8 @@ use List::Util 'min';
 use Image::Imlib2;
 use Image::JpegTran::AutoRotate;
 
+my $ORIGINAL = 'original';
+
 use Exporter 'import';
 our @EXPORT_OK = qw(cache_image_as_needed exifdate $config);
 
@@ -27,7 +29,6 @@ sub startup {
 				sort_images_by => 'name',
 
 				cache_dir => '/path/to/a/cache/dir',
-				rotated_dir => '.rotated',
 
 				scaled_width => 800,
 				scaled_height => 600,
@@ -48,35 +49,39 @@ sub startup {
 sub cache_image_as_needed {
 	my (%target) = @_;
 
-	my $cur_path = "$config->{albums_dir}/$target{album}/$target{image}";
-	return undef unless -f $cur_path;
+	return undef unless $target{image};
+	my $original_path = "$config->{albums_dir}/$target{album}/$target{image}";
+	return undef unless -f $original_path;
 
-	rotate_and_cache_raw_image(%target);
+	my $image_cache_dir = "$config->{cache_dir}/$target{album}/$target{image}";
+	make_path($image_cache_dir);
 
-	my $new_name;
-	my $path_prefix = '';
+	my $rotated_path = "$image_cache_dir/$ORIGINAL";
+	rotate_and_cache_raw_image($original_path, $rotated_path);
+
+	my $final_name;
 	if ($target{raw}) {
-		$new_name = $target{image};
-		$path_prefix = "$config->{rotated_dir}/";
+		$final_name = $ORIGINAL;
 	} elsif ($target{scaled}) {
-		$new_name = cache_scaled_image(%target);
+		$final_name = resize_image(
+			$image_cache_dir, $ORIGINAL,
+			$config->{scaled_width}, $config->{scaled_height}, 0,
+		);
 	} elsif ($target{thumb}) {
-		$new_name = cache_thumb_image(%target);
+		$final_name = resize_image(
+			$image_cache_dir, $ORIGINAL,
+			$config->{thumb_width}, $config->{thumb_height}, $config->{thumb_square},
+		);
 	} else {
 		# not a direct image request
 		return undef;
 	}
 
-	return "$path_prefix$target{album}/$new_name";
+	return "$target{album}/$target{image}/$final_name";
 }
 
 sub rotate_and_cache_raw_image {
-	my (%target) = @_;
-
-	my $cur_path = "$config->{albums_dir}/$target{album}/$target{image}";
-	my $dest_dir = "$config->{cache_dir}/$config->{rotated_dir}/$target{album}";
-	make_path($dest_dir);
-	my $new_path = "$dest_dir/$target{image}";
+	my ($cur_path, $new_path) = @_;
 
 	if (! -e $new_path) {
 		# auto_rotate() has tricky return codes;
@@ -89,35 +94,13 @@ sub rotate_and_cache_raw_image {
 	}
 }
 
-sub cache_scaled_image {
-	my (%target) = @_;
-
-	my ($name, $path, $extension) = fileparse($target{image}, qr/\.[^.]*/);
-	return resize_image(
-		"$config->{cache_dir}/$config->{rotated_dir}/$target{album}", $name, $extension,
-		$config->{scaled_width}, $config->{scaled_height}, 0,
-		"$config->{cache_dir}/$target{album}",
-	);
-}
-
-sub cache_thumb_image {
-	my (%target) = @_;
-
-	my ($name, $path, $extension) = fileparse($target{image}, qr/\.[^.]*/);
-	return resize_image(
-		"$config->{cache_dir}/$config->{rotated_dir}/$target{album}", $name, $extension,
-		$config->{thumb_width}, $config->{thumb_height}, $config->{thumb_square},
-		"$config->{cache_dir}/$target{album}",
-	);
-}
-
 sub resize_image {
-	my ($source_dir, $name, $extension, $max_width, $max_height, $square, $dest_dir) = @_;
+	my ($working_dir, $source_name, $max_width, $max_height, $square) = @_;
 
-	my $cur_path = "$source_dir/$name$extension";
+	my $cur_path = "$working_dir/$source_name";
 
-	my $new_name = "$name--${max_width}x$max_height" . ($square ? '-square' : '') . "$extension";
-	my $new_path = "$dest_dir/$new_name";
+	my $new_name = "${max_width}x$max_height" . ($square ? '-square' : '');
+	my $new_path = "$working_dir/$new_name";
 	return $new_name if -e $new_path;
 
 	my $image = Image::Imlib2->load($cur_path);
@@ -141,22 +124,29 @@ sub resize_image {
 	$height_factor = $max_height / $height if $height > $max_height;
 	my $scale_factor = min($width_factor, $height_factor);
 
+	#$image->image_set_format("jpeg");
 	if ($scale_factor < 1) {
 		$image = $image->create_scaled_image($width * $scale_factor, $height * $scale_factor);
 
-		make_path($dest_dir);
-		$image->save($new_path);
+		save_image_while_working_around_imlib_bug($image, $new_path);
 	} elsif ($square) {
 		# we hit this case if the image is to be squared and just one dimension
 		# was smaller than the square size, so we still need to crop the other
 		# dimension (which was done above, but now we need to save it)
-		make_path($dest_dir);
-		$image->save($new_path);
+		save_image_while_working_around_imlib_bug($image, $new_path);
 	} else {
 		symlink($cur_path, $new_path);
 	}
 
 	return $new_name;
+}
+
+sub save_image_while_working_around_imlib_bug {
+	my ($image, $new_path) = @_;
+
+	my $make_imlib_happy = "$new_path.jpg";
+	$image->save($make_imlib_happy);
+	rename($make_imlib_happy, $new_path);
 }
 
 sub exifdate {
