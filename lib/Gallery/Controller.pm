@@ -76,18 +76,24 @@ sub render_image_page {
 
 	my $album_dir = "$config->{albums_dir}/$target{album}";
 	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
-	my @files = sort(grep { !/^\./ && !/$highlight_regex/ && -f "$album_dir/$_" } readdir $dh);
+	my @files = grep { !/^\./ && !/$highlight_regex/ && -f "$album_dir/$_" } readdir $dh;
 	closedir $dh;
+
+	@files = map { {
+		name => $_,
+		date => exifdate("$album_dir/$_"), # note that `exifdate` returns 'unused' unless date sort is enabled
+	} } @files;
+	@files = sort { $a->{$config->{sort_images_by}} cmp $b->{$config->{sort_images_by}} } @files;
 
 	my ($prev, $next, $found_it);
 	foreach my $each (@files) {
 		if ($found_it) {
-			$next = $each;
+			$next = $each->{name};
 			last;
-		} elsif ($each eq $target{image}) {
+		} elsif ($each->{name} eq $target{image}) {
 			$found_it = 1;
 		} else {
-			$prev = $each;
+			$prev = $each->{name};
 		}
 	}
 	$prev = "$basepath$prev" if $prev;
@@ -132,7 +138,7 @@ sub render_album_page {
 				thumb => url_escape("$basepath$entry?thumb=1"),
 				link => url_escape("$basepath$entry"),
 				name => $entry,
-				date => exifdate("$album_dir/$entry"),
+				date => exifdate("$album_dir/$entry"), # note that `exifdate` returns 'unused' unless date sort is enabled
 			});
 		}
 	}
