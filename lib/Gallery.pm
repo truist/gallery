@@ -7,6 +7,7 @@ use IO::Handle;
 use List::Util 'min';
 use Image::Imlib2;
 use Image::JpegTran::AutoRotate;
+use File::stat;
 
 my $ORIGINAL = 'original';
 
@@ -83,7 +84,7 @@ sub cache_image_as_needed {
 sub rotate_and_cache_raw_image {
 	my ($cur_path, $new_path) = @_;
 
-	if (! -e $new_path) {
+	if (!enforce_newer($cur_path, $new_path, 0)) {
 		# auto_rotate() has tricky return codes;
 		# 1 means success; -1 means doesn't need rotated; undef means error
 		# since -1 evaluates to true, we can't just `if (auto_rotate())`
@@ -101,7 +102,7 @@ sub resize_image {
 
 	my $new_name = "${max_width}x$max_height" . ($square ? '-square' : '');
 	my $new_path = "$working_dir/$new_name";
-	return $new_name if -e $new_path;
+	return $new_name if enforce_newer($cur_path, $new_path, 1);
 
 	my $image = Image::Imlib2->load($cur_path);
 	my $width  = $image->width();
@@ -147,6 +148,24 @@ sub save_image_while_working_around_imlib_bug {
 	my $make_imlib_happy = "$new_path.jpg";
 	$image->save($make_imlib_happy);
 	rename($make_imlib_happy, $new_path);
+}
+
+# this is a fix for https://github.com/truist/gallery/issues/2#issuecomment-316259361
+# it also provides a feature: if an original is modified, the gallery will notice
+sub enforce_newer {
+	my ($source, $dest, $same_ok) = @_;
+
+	if (-e $dest) {
+		my $source_mtime = lstat($source)->mtime;
+		my $dest_mtime = lstat($dest)->mtime;
+		if ($source_mtime < $dest_mtime || ($same_ok && $source_mtime <= $dest_mtime)) {
+			return 1;
+		} else {
+			return ! unlink $dest;
+		}
+	} else {
+		return 0;
+	}
 }
 
 sub exifdate {
