@@ -5,18 +5,19 @@ use Mojolicious::Static;
 use Mojo::Util;
 
 use Data::Dumper;
-use List::Util qw{shuffle first};
 
-use Gallery qw(cache_image_as_needed exifdate $config);
+use Gallery qw(cache_image_as_needed exifdate find_prev_and_next load_album url_escape $config);
+use JSONFeed qw(cache_feed_as_needed);
 
-my $highlight_regex = qr{^\Q$config->{highlight_filename}\E$};
 
 sub route {
 	my ($self) = @_;
 
 	my %target = $self->split_path();
 
-	return $self->rendered() if $self->handle_direct_image_request(%target);
+	return $self->rendered()
+		if $self->handle_direct_image_request(%target)
+			|| $self->handle_feed_request(%target);
 
 	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
 	my @parent_links = $self->generate_parent_links('/', %target);
@@ -41,18 +42,29 @@ sub split_path {
 		raw => scalar $self->param('raw'),
 		scaled => scalar $self->param('scaled'),
 		thumb => scalar $self->param('thumb'),
+		feed => scalar $self->param('feed'),
 	);
 }
 
 sub handle_direct_image_request {
 	my ($self, %target) = @_;
 
-	my $cached_path = cache_image_as_needed(%target);
-	return unless $cached_path;
-	return $self->app->static->serve_asset(
-		$self,
-		$self->app->static->file($cached_path),
-	);
+	return $self->serve_static(cache_image_as_needed(%target));
+}
+
+sub handle_feed_request {
+	my ($self, %target) = @_;
+
+	return $self->serve_static(cache_feed_as_needed(%target));
+}
+
+sub serve_static {
+	my ($self, $path) = @_;
+
+	return unless $path;
+
+	my $static = $self->app->static;
+	return $static->serve_asset($self, $static->file($path));
 }
 
 sub generate_parent_links {
@@ -72,32 +84,8 @@ sub generate_parent_links {
 sub render_image_page {
 	my ($self, $target, $basepath, $parent_links) = @_;
 	my %target = %$target;
-	my @parent_links = @$parent_links;
 
-	my $album_dir = "$config->{albums_dir}/$target{album}";
-	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
-	my @files = grep { !/^\./ && !/$highlight_regex/ && -f "$album_dir/$_" } readdir $dh;
-	closedir $dh;
-
-	@files = map { {
-		name => $_,
-		date => exifdate("$album_dir/$_"), # note that `exifdate` returns 'unused' unless date sort is enabled
-	} } @files;
-	@files = sort { $a->{$config->{sort_images_by}} cmp $b->{$config->{sort_images_by}} } @files;
-
-	my ($prev, $next, $found_it);
-	foreach my $each (@files) {
-		if ($found_it) {
-			$next = $each->{name};
-			last;
-		} elsif ($each->{name} eq $target{image}) {
-			$found_it = 1;
-		} else {
-			$prev = $each->{name};
-		}
-	}
-	$prev = "$basepath$prev" if $prev;
-	$next = "$basepath$next" if $next;
+	my ($prev, $next) = find_prev_and_next($target, $basepath);
 
 	return $self->render(
 		template => 'pages/image',
@@ -107,90 +95,30 @@ sub render_image_page {
 		},
 		name => '',
 		title => "$config->{site_title} | $target{album}",
-		parent_links => \@parent_links,
+		parent_links => $parent_links,
 		prev => ($prev ? url_escape($prev) : undef),
 		next => ($next ? url_escape($next) : undef),
 	);
 }
 
-
 sub render_album_page {
 	my ($self, $target, $basepath, $parent_links) = @_;
 	my %target = %$target;
-	my @parent_links = @$parent_links;
 
-	my (@subalbums, @images);
-	my $album_dir = "$config->{albums_dir}/$target{album}";
-	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
-	while (my $entry = readdir $dh) {
-		next if $entry =~ /^\./;
-		next if $entry =~ /$highlight_regex/;
-		if (-d "$album_dir/$entry") {
-			if (my $highlight = $self->pick_subalbum_highlight("$album_dir/$entry")) {
-				push(@subalbums, {
-					thumb => url_escape("$basepath$entry/$highlight?thumb=1"),
-					link => url_escape("$basepath$entry/"),
-					name => $entry,
-				});
-			}
-		} else {
-			push(@images, {
-				thumb => url_escape("$basepath$entry?thumb=1"),
-				link => url_escape("$basepath$entry"),
-				name => $entry,
-				date => exifdate("$album_dir/$entry"), # note that `exifdate` returns 'unused' unless date sort is enabled
-			});
-		}
-	}
-	closedir $dh;
+	my ($subalbums, $images) = load_album($target, $basepath);
 
-	@subalbums = sort { $a->{name} cmp $b->{name} } @subalbums;
-	@images = sort { $a->{$config->{sort_images_by}} cmp $b->{$config->{sort_images_by}} } @images;
-	pop(@parent_links) if @parent_links; # don't include the current album
+	pop(@$parent_links) if @$parent_links; # don't include the current album
 	my @albums = split(/\//, $target{album});
 	my $name = (@albums ? pop(@albums) : undef);
 
 	return $self->render(
 		template => 'pages/album',
-		subalbums => \@subalbums,
-		images => \@images,
+		subalbums => $subalbums,
+		images => $images,
 		name => $name,
 		title => "$config->{site_title} | $target{album}",
-		parent_links => \@parent_links,
+		parent_links => $parent_links,
 	);
-}
-
-
-sub pick_subalbum_highlight {
-	my ($self, $subalbum) = @_;
-
-	opendir(my $dh, $subalbum) or die "unable to list $subalbum: $!";
-	my @entries = grep { !/^\./ } readdir $dh;
-	closedir $dh;
-	die "dir has no contents: $subalbum" unless @entries;
-
-	my $highlight = first { /$highlight_regex/ } @entries;
-	if ($highlight && -l "$subalbum/$highlight") {
-		$highlight = readlink("$subalbum/$highlight");
-		return $highlight if -f "$subalbum/$highlight";
-		if (-d "$subalbum/$highlight") {
-			my $deeper_highlight = $self->pick_subalbum_highlight("$subalbum/$highlight");
-			return "$highlight/$deeper_highlight" if $deeper_highlight;
-		}
-	}
-
-	@entries = shuffle(@entries);
-
-	foreach my $entry (@entries) {
-		return $entry if -f "$subalbum/$entry";
-
-		if (-d "$subalbum/$entry") {
-			my $highlight = $self->pick_subalbum_highlight("$subalbum/$entry");
-			return "$entry/$highlight" if $highlight;
-		}
-	}
-
-	return undef;
 }
 
 sub url_escape {

@@ -4,17 +4,20 @@ use Mojo::Base 'Mojolicious';
 use File::Basename;
 use File::Path 'make_path';
 use IO::Handle;
-use List::Util 'min';
+use List::Util qw{min shuffle first};
 use Image::Imlib2;
 use Image::JpegTran::AutoRotate;
 use File::stat;
+use Mojo::Util;
 
 my $ORIGINAL = 'original';
 
 use Exporter 'import';
-our @EXPORT_OK = qw(cache_image_as_needed exifdate $config);
+our @EXPORT_OK = qw(cache_image_as_needed exifdate find_prev_and_next load_album url_escape $config);
 
 our $config;
+
+my $highlight_regex;
 
 sub startup {
 	my ($self) = @_;
@@ -45,14 +48,115 @@ sub startup {
 	my $router = $self->routes;
 	$router->get('/')->to('controller#route', path => '');
 	$router->get('/*path')->to('controller#route');
+
+	$highlight_regex = qr{^\Q$config->{highlight_filename}\E$};
+}
+
+sub load_album {
+	my ($target, $basepath) = @_;
+	my %target = %$target;
+
+	my (@subalbums, @images);
+	my $album_dir = "$config->{albums_dir}/$target{album}";
+	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
+	while (my $entry = readdir $dh) {
+		next if $entry =~ /^\./;
+		next if $entry =~ /$highlight_regex/;
+		if (-d "$album_dir/$entry") {
+			if (my $highlight = pick_subalbum_highlight("$album_dir/$entry")) {
+				push(@subalbums, {
+					thumb => url_escape("$basepath$entry/$highlight?thumb=1"),
+					link => url_escape("$basepath$entry/"),
+					name => $entry,
+				});
+			}
+		} else {
+			push(@images, {
+				thumb => url_escape("$basepath$entry?thumb=1"),
+				link => url_escape("$basepath$entry"),
+				name => $entry,
+				date => exifdate("$album_dir/$entry"), # note that `exifdate` returns 'unused' unless date sort is enabled
+			});
+		}
+	}
+	closedir $dh;
+
+	@subalbums = sort { $a->{name} cmp $b->{name} } @subalbums;
+	@images = sort { $a->{$config->{sort_images_by}} cmp $b->{$config->{sort_images_by}} } @images;
+
+	return (\@subalbums, \@images);
+}
+
+sub pick_subalbum_highlight {
+	my ($subalbum) = @_;
+
+	opendir(my $dh, $subalbum) or die "unable to list $subalbum: $!";
+	my @entries = grep { !/^\./ } readdir $dh;
+	closedir $dh;
+	die "dir has no contents: $subalbum" unless @entries;
+
+	my $highlight = first { /$highlight_regex/ } @entries;
+	if ($highlight && -l "$subalbum/$highlight") {
+		$highlight = readlink("$subalbum/$highlight");
+		return $highlight if -f "$subalbum/$highlight";
+		if (-d "$subalbum/$highlight") {
+			my $deeper_highlight = pick_subalbum_highlight("$subalbum/$highlight");
+			return "$highlight/$deeper_highlight" if $deeper_highlight;
+		}
+	}
+
+	@entries = shuffle(@entries);
+
+	foreach my $entry (@entries) {
+		return $entry if -f "$subalbum/$entry";
+
+		if (-d "$subalbum/$entry") {
+			my $highlight = pick_subalbum_highlight("$subalbum/$entry");
+			return "$entry/$highlight" if $highlight;
+		}
+	}
+
+	return undef;
+}
+
+sub find_prev_and_next {
+	my ($target, $basepath) = @_;
+	my %target = %$target;
+
+	my $album_dir = "$config->{albums_dir}/$target{album}";
+	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
+	my @files = grep { !/^\./ && !/$highlight_regex/ && -f "$album_dir/$_" } readdir $dh;
+	closedir $dh;
+
+	@files = map { {
+		name => $_,
+		date => exifdate("$album_dir/$_"), # note that `exifdate` returns 'unused' unless date sort is enabled
+	} } @files;
+	@files = sort { $a->{$config->{sort_images_by}} cmp $b->{$config->{sort_images_by}} } @files;
+
+	my ($prev, $next, $found_it);
+	foreach my $each (@files) {
+		if ($found_it) {
+			$next = $each->{name};
+			last;
+		} elsif ($each->{name} eq $target{image}) {
+			$found_it = 1;
+		} else {
+			$prev = $each->{name};
+		}
+	}
+	$prev = "$basepath$prev" if $prev;
+	$next = "$basepath$next" if $next;
+
+	return ($prev, $next);
 }
 
 sub cache_image_as_needed {
 	my (%target) = @_;
 
-	return undef unless $target{image};
+	return unless $target{image};
 	my $original_path = "$config->{albums_dir}/$target{album}/$target{image}";
-	return undef unless -f $original_path;
+	return unless -f $original_path;
 
 	my $image_cache_dir = "$config->{cache_dir}/$target{album}/$target{image}";
 	make_path($image_cache_dir);
@@ -75,7 +179,7 @@ sub cache_image_as_needed {
 		);
 	} else {
 		# not a direct image request
-		return undef;
+		return;
 	}
 
 	return "$target{album}/$target{image}/$final_name";
@@ -186,6 +290,10 @@ sub exifdate {
 		unless defined $date;
 
 	return str2time($date);
+}
+
+sub url_escape {
+	return Mojo::Util::url_escape(@_, '^A-Za-z0-9\-._~\/\?\=');
 }
 
 1;
