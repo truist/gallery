@@ -1,7 +1,6 @@
 package JSONFeed;
 
 use JSON;
-use Data::Dumper;
 
 use Gallery qw($config);
 

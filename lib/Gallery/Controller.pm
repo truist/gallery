@@ -2,9 +2,6 @@ package Gallery::Controller;
 use Mojo::Base 'Mojolicious::Controller';
 
 use Mojolicious::Static;
-use Mojo::Util;
-
-use Data::Dumper;
 
 use Gallery qw(cache_image_as_needed exifdate find_prev_and_next load_album url_escape $config);
 use JSONFeed qw(cache_feed_as_needed);
@@ -119,10 +116,6 @@ sub render_album_page {
 		title => "$config->{site_title} | $target{album}",
 		parent_links => $parent_links,
 	);
-}
-
-sub url_escape {
-	return Mojo::Util::url_escape(@_, '^A-Za-z0-9\-._~\/\?\=');
 }
 
 1;

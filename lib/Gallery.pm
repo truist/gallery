@@ -3,11 +3,11 @@ use Mojo::Base 'Mojolicious';
 
 use File::Basename;
 use File::Path 'make_path';
+use File::stat;
 use IO::Handle;
-use List::Util qw{min shuffle first};
 use Image::Imlib2;
 use Image::JpegTran::AutoRotate;
-use File::stat;
+use List::Util qw{min shuffle first};
 use Mojo::Util;
 
 my $ORIGINAL = 'original';
