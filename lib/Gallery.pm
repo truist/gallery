@@ -26,6 +26,7 @@ sub startup {
 	STDERR->autoflush(1);
 
 	$config = $self->app->plugin('Config' => { default => {
+				site_base_url => 'https://gallery.example.com',
 				site_title => 'YOUR SITE TITLE',
 
 				albums_dir => '/path/to/your/original/images',

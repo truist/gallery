@@ -12,11 +12,12 @@ sub route {
 
 	my %target = $self->split_path();
 
+	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
+
 	return $self->rendered()
 		if $self->handle_direct_image_request(%target)
-			|| $self->handle_feed_request(%target);
+			|| $self->handle_feed_request(\%target, $basepath);
 
-	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
 	my @parent_links = $self->generate_parent_links('/', %target);
 	if ($target{image}) {
 		return $self->render_image_page(\%target, $basepath, \@parent_links);
@@ -50,9 +51,9 @@ sub handle_direct_image_request {
 }
 
 sub handle_feed_request {
-	my ($self, %target) = @_;
+	my ($self, $target, $basepath) = @_;
 
-	return $self->serve_static(cache_feed_as_needed(%target));
+	return $self->serve_static(cache_feed_as_needed($target, $basepath));
 }
 
 sub serve_static {

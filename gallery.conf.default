@@ -4,6 +4,7 @@
 
 {
 	# set these, at least:
+	site_base_url => 'https://gallery.example.com',
 	site_title => 'YOUR SITE TITLE',
 	albums_dir => '/path/to/your/original/images',
 	cache_dir => '/path/to/a/cache/dir',
