@@ -1,13 +1,14 @@
 package JSONFeed;
 
 use JSON;
+use POSIX 'strftime';
 
 use Gallery qw(load_album $config);
 
+my $FEED_FILE = 'feed.json';
+
 use Exporter 'import';
 our @EXPORT_OK = qw(cache_feed_as_needed);
-
-my $FEED_FILE = 'feed.json';
 
 sub cache_feed_as_needed {
 	my ($target, $basepath) = @_;
@@ -28,11 +29,14 @@ sub cache_feed_as_needed {
 	@items = map {
 		my $full_url = $config->{site_base_url} . $_->{link};
 		my $thumb_url = $config->{site_base_url} . $_->{thumb};
+		my $item_file = "$config->{albums_dir}/$target->{album}/$_->{name}";
+
 		{
 			id => $_->{link},
 			url => $full_url,
 			content_html => qq{<img src="$thumb_url" />},
 			image => $thumb_url,
+			date_modified => rfc3339_date((stat $item_file)[9]),
 		};
 	} @items;
 	$feed->{items} = \@items;
@@ -47,6 +51,15 @@ sub cache_feed_as_needed {
 	close $fh or die "unable to close $feed_file: $!";
 
 	return "$target->{album}/$FEED_FILE";
+}
+
+# based on https://unix.stackexchange.com/a/120490/223285
+sub rfc3339_date {
+	my ($timestamp) = @_;
+
+	my $date_string = strftime("%Y-%m-%dT%T%z", localtime($timestamp));
+	$date_string =~ s/(..)$/:\1/;
+	return $date_string;
 }
 
 1;
