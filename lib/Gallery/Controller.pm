@@ -62,7 +62,7 @@ sub serve_static {
 	return unless $path;
 
 	my $static = $self->app->static;
-	return $static->serve_asset($self, $static->file($path));
+	return $static->serve($self, $path);
 }
 
 sub generate_parent_links {

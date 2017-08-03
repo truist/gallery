@@ -46,6 +46,8 @@ sub startup {
 	my $static = $self->app->static;
 	push(@{$static->paths}, $config->{cache_dir});
 
+	$self->app->types->type(json => 'application/json');
+
 	my $router = $self->routes;
 	$router->get('/')->to('controller#route', path => '');
 	$router->get('/*path')->to('controller#route');
