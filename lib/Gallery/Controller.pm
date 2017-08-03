@@ -98,6 +98,7 @@ sub render_image_page {
 		parent_links => $parent_links,
 		prev => ($prev ? url_escape($prev) : undef),
 		next => ($next ? url_escape($next) : undef),
+		feed_url => '',
 	);
 }
 
