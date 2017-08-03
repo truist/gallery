@@ -14,7 +14,7 @@ use Mojo::Util;
 my $ORIGINAL = 'original';
 
 use Exporter 'import';
-our @EXPORT_OK = qw(cache_image_as_needed exifdate find_prev_and_next load_album url_escape $config);
+our @EXPORT_OK = qw(cache_image_as_needed find_prev_and_next load_album url_escape $config);
 
 our $config;
 
@@ -58,10 +58,9 @@ sub startup {
 
 sub load_album {
 	my ($target, $basepath) = @_;
-	my %target = %$target;
 
 	my (@subalbums, @images);
-	my $album_dir = "$config->{albums_dir}/$target{album}";
+	my $album_dir = "$config->{albums_dir}/$target->{album}";
 	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
 	while (my $entry = readdir $dh) {
 		next if $entry =~ /^\./;
@@ -79,7 +78,7 @@ sub load_album {
 				thumb => url_escape("$basepath$entry?thumb=1"),
 				link => url_escape("$basepath$entry"),
 				name => $entry,
-				date => exifdate("$album_dir/$entry"), # note that `exifdate` returns 'unused' unless date sort is enabled
+				date => exifdate_cached("$target->{album}/$entry"),
 			});
 		}
 	}
@@ -125,16 +124,15 @@ sub pick_subalbum_highlight {
 
 sub find_prev_and_next {
 	my ($target, $basepath) = @_;
-	my %target = %$target;
 
-	my $album_dir = "$config->{albums_dir}/$target{album}";
+	my $album_dir = "$config->{albums_dir}/$target->{album}";
 	opendir(my $dh, $album_dir) or die "unable to list $album_dir: $!";
 	my @files = grep { !/^\./ && !/$highlight_regex/ && -f "$album_dir/$_" } readdir $dh;
 	closedir $dh;
 
 	@files = map { {
 		name => $_,
-		date => exifdate("$album_dir/$_"), # note that `exifdate` returns 'unused' unless date sort is enabled
+		date => exifdate_cached("$target->{album}/$_"),
 	} } @files;
 	@files = sort { $a->{$config->{sort_images_by}} cmp $b->{$config->{sort_images_by}} } @files;
 
@@ -143,7 +141,7 @@ sub find_prev_and_next {
 		if ($found_it) {
 			$next = $each->{name};
 			last;
-		} elsif ($each->{name} eq $target{image}) {
+		} elsif ($each->{name} eq $target->{image}) {
 			$found_it = 1;
 		} else {
 			$prev = $each->{name};
@@ -159,14 +157,12 @@ sub cache_image_as_needed {
 	my (%target) = @_;
 
 	return unless $target{image};
-	my $original_path = "$config->{albums_dir}/$target{album}/$target{image}";
-	return unless -f $original_path;
+
+	my $source_path = "$config->{albums_dir}/$target{album}/$target{image}";
+	return unless -f $source_path;
 
 	my $image_cache_dir = "$config->{cache_dir}/$target{album}/$target{image}";
-	make_path($image_cache_dir);
-
-	my $rotated_path = "$image_cache_dir/$ORIGINAL";
-	rotate_and_cache_raw_image($original_path, $rotated_path);
+	rotate_and_date_and_cache_raw_image($source_path, $image_cache_dir);
 
 	my $final_name;
 	if ($target{raw}) {
@@ -189,9 +185,12 @@ sub cache_image_as_needed {
 	return "$target{album}/$target{image}/$final_name";
 }
 
-sub rotate_and_cache_raw_image {
-	my ($cur_path, $new_path) = @_;
+sub rotate_and_date_and_cache_raw_image {
+	my ($cur_path, $image_cache_dir) = @_;
 
+	make_path($image_cache_dir);
+
+	my $new_path = "$image_cache_dir/$ORIGINAL";
 	if (enforce_cache_is_newer($cur_path, $new_path, 0)) {
 		# auto_rotate() has tricky return codes;
 		# 1 means success; -1 means doesn't need rotated; undef means error
@@ -200,6 +199,13 @@ sub rotate_and_cache_raw_image {
 		unless (defined $result && $result > 0) {
 			copy($cur_path, $new_path);
 		}
+
+		# set the cached file's modification date to match the source file's
+		# exif date, so we don't have to parse the exif stuff (which is slow)
+		# more than once per image. this will also update the cached file's
+		# inode time.
+		my $exif_date = exifdate($cur_path);
+		utime($exif_date, $exif_date, $new_path);
 	}
 }
 
@@ -281,7 +287,7 @@ sub original_is_newer {
 	my $original_stat = lstat($original);
 	my $cached_stat = lstat($cached);
 
-	# ctime tells us when the inode was last modified (which will be when it was created, at the earliest)
+	# ctime tells us when the inode was last modified
 	# mtime tells us when the file was last modified
 	# if either one (for the original) is greater than the cache's ctime, we say 'true'
 	return greater($original_stat->ctime, $cached_stat->ctime, $same_ok)
@@ -309,13 +315,25 @@ sub exifdate {
 	my $exiftool = Image::ExifTool->new();
 	$exiftool->ExtractInfo($image_path, {})
 		or die "couldn't extract info for $image_path: $!";
-	my $date = $exiftool->GetValue('DateTimeOriginal', 'ValueConv');
-	$date = $exiftool->GetValue('FileModifyDate', 'ValueConv')
-		unless defined $date;
-	$date = (stat $image_path)[9]
-		unless defined $date;
 
-	return str2time($date);
+	my $date = $exiftool->GetValue('DateTimeOriginal', 'ValueConv')
+		|| $exiftool->GetValue('FileModifyDate', 'ValueConv');
+
+	if ($date) {
+		return str2time($date);
+	} else {
+		return stat($image_path)->mtime;
+	}
+}
+
+sub exifdate_cached {
+	my ($relative_image_path) = @_;
+
+	my $source_path = "$config->{albums_dir}/$relative_image_path";
+	my $image_cache_dir = "$config->{cache_dir}/$relative_image_path";
+	rotate_and_date_and_cache_raw_image($source_path, $image_cache_dir);
+
+	return stat("$image_cache_dir/$ORIGINAL")->mtime;
 }
 
 sub url_escape {

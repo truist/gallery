@@ -2,6 +2,7 @@ package JSONFeed;
 
 use JSON;
 use POSIX 'strftime';
+use File::stat;
 
 use Gallery qw(load_album $config);
 
@@ -43,7 +44,7 @@ sub update_json_feed {
 			url => $full_url,
 			content_html => qq{<img src="$thumb_url" />},
 			image => $thumb_url,
-			date_modified => rfc3339_date((stat $item_file)[9]),
+			date_modified => rfc3339_date(stat($item_file)->mtime),
 		};
 	} @items;
 	$feed->{items} = \@items;

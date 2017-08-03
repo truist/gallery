@@ -3,7 +3,7 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Mojolicious::Static;
 
-use Gallery qw(cache_image_as_needed exifdate find_prev_and_next load_album url_escape $config);
+use Gallery qw(cache_image_as_needed find_prev_and_next load_album url_escape $config);
 use JSONFeed qw(cache_feed_as_needed);
 
 
