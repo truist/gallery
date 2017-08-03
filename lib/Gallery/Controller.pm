@@ -53,7 +53,8 @@ sub handle_direct_image_request {
 sub handle_feed_request {
 	my ($self, $target, $basepath) = @_;
 
-	return $self->serve_static(cache_feed_as_needed($target, $basepath));
+	return $self->render(text => cache_feed_as_needed($target, $basepath), format => 'json');
+	#return $self->serve_static(cache_feed_as_needed($target, $basepath));
 }
 
 sub serve_static {

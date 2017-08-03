@@ -5,7 +5,7 @@ use POSIX 'strftime';
 
 use Gallery qw(load_album $config);
 
-my $FEED_FILE = 'feed.json';
+#my $JSON_FEED_FILE = 'feed.json';
 
 use Exporter 'import';
 our @EXPORT_OK = qw(cache_feed_as_needed);
@@ -13,8 +13,15 @@ our @EXPORT_OK = qw(cache_feed_as_needed);
 sub cache_feed_as_needed {
 	my ($target, $basepath) = @_;
 
-	return if $target->{image};
-	return unless $target->{feed} eq 'json';
+	return undef if $target->{image};
+
+	return update_json_feed($target, $basepath) if $target->{feed} eq 'json';
+
+	return undef;
+}
+
+sub update_json_feed {
+	my ($target, $basepath) = @_;
 
 	my $album_url = "$config->{site_base_url}/$target->{album}";
 	my $feed = {
@@ -43,14 +50,16 @@ sub cache_feed_as_needed {
 
 	my $json_feed = encode_json($feed);
 
-	my $work_dir = "$config->{cache_dir}/$target->{album}";
-	my $feed_file = "$work_dir/$FEED_FILE";
-	my $fh;
-	open($fh, '>', $feed_file) or die "unable to open $feed_file: $!";
-	print { $fh } $json_feed or die "unable to write to $feed_file: $!";
-	close $fh or die "unable to close $feed_file: $!";
+	return $json_feed;
 
-	return "$target->{album}/$FEED_FILE";
+	# my $work_dir = "$config->{cache_dir}/$target->{album}";
+	# my $feed_file = "$work_dir/$JSON_FEED_FILE";
+	# my $fh;
+	# open($fh, '>', $feed_file) or die "unable to open $feed_file: $!";
+	# print { $fh } $json_feed or die "unable to write to $feed_file: $!";
+	# close $fh or die "unable to close $feed_file: $!";
+
+	# return "$target->{album}/$JSON_FEED_FILE";
 }
 
 # based on https://unix.stackexchange.com/a/120490/223285
