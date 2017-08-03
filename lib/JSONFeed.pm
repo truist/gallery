@@ -13,11 +13,11 @@ our @EXPORT_OK = qw(cache_feed_as_needed);
 sub cache_feed_as_needed {
 	my ($target, $basepath) = @_;
 
-	return undef if $target->{image};
+	return if $target->{image};
 
 	return update_json_feed($target, $basepath) if $target->{feed} eq 'json';
 
-	return undef;
+	return;
 }
 
 sub update_json_feed {
