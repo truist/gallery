@@ -14,9 +14,9 @@ sub route {
 
 	my $basepath = ($target{album} ? "/$target{album}/" : "/"); # watch out for site root
 
-	return $self->rendered()
-		if $self->handle_direct_image_request(%target)
-			|| $self->handle_feed_request(\%target, $basepath);
+	if ($self->handle_direct_image_request(%target) || $self->handle_feed_request(\%target, $basepath)) {
+		return $self->rendered()
+	}
 
 	my @parent_links = $self->generate_parent_links('/', %target);
 	if ($target{image}) {
@@ -47,14 +47,18 @@ sub split_path {
 sub handle_direct_image_request {
 	my ($self, %target) = @_;
 
-	return $self->serve_static(cache_image_as_needed(%target));
+	if (my $image = cache_image_as_needed(%target)) {
+		return $self->serve_static($image);
+	}
 }
 
 sub handle_feed_request {
 	my ($self, $target, $basepath) = @_;
 
-	return $self->render(text => cache_feed_as_needed($target, $basepath), format => 'json');
-	#return $self->serve_static(cache_feed_as_needed($target, $basepath));
+	if (my $feed = cache_feed_as_needed($target, $basepath)) {
+		return $self->render(text => $feed, format => 'json');
+		#return $self->serve_static($feed);
+	}
 }
 
 sub serve_static {
