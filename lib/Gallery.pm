@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious';
 use File::Basename;
 use File::Path 'make_path';
 use File::stat;
+use File::Copy;
 use IO::Handle;
 use Image::Imlib2;
 use Image::JpegTran::AutoRotate;
@@ -191,13 +192,13 @@ sub cache_image_as_needed {
 sub rotate_and_cache_raw_image {
 	my ($cur_path, $new_path) = @_;
 
-	if (!enforce_newer($cur_path, $new_path, 0)) {
+	if (enforce_cache_is_newer($cur_path, $new_path, 0)) {
 		# auto_rotate() has tricky return codes;
 		# 1 means success; -1 means doesn't need rotated; undef means error
 		# since -1 evaluates to true, we can't just `if (auto_rotate())`
 		my $result = auto_rotate($cur_path => $new_path);
 		unless (defined $result && $result > 0) {
-			symlink($cur_path, $new_path);
+			copy($cur_path, $new_path);
 		}
 	}
 }
@@ -209,7 +210,7 @@ sub resize_image {
 
 	my $new_name = "${max_width}x$max_height" . ($square ? '-square' : '');
 	my $new_path = "$working_dir/$new_name";
-	return $new_name if enforce_newer($cur_path, $new_path, 1);
+	return $new_name unless enforce_cache_is_newer($cur_path, $new_path, 1);
 
 	my $image = Image::Imlib2->load($cur_path);
 	my $width  = $image->width();
@@ -257,21 +258,43 @@ sub save_image_while_working_around_imlib_bug {
 	rename($make_imlib_happy, $new_path);
 }
 
-# this is a fix for https://github.com/truist/gallery/issues/2#issuecomment-316259361
-# it also provides a feature: if an original is modified, the gallery will notice
-sub enforce_newer {
-	my ($source, $dest, $same_ok) = @_;
+# This is a fix for https://github.com/truist/gallery/issues/2#issuecomment-316259361
+# It also provides a feature: if an original is modified, the gallery will notice
+sub enforce_cache_is_newer {
+	my ($original, $cached, $same_ok) = @_;
 
-	if (-e $dest) {
-		my $source_mtime = lstat($source)->mtime;
-		my $dest_mtime = lstat($dest)->mtime;
-		if ($source_mtime < $dest_mtime || ($same_ok && $source_mtime <= $dest_mtime)) {
-			return 1;
+	if (-e $cached) {
+		if (original_is_newer($original, $cached, $same_ok)) {
+			return unlink $cached;
 		} else {
-			return ! unlink $dest;
+			return 0;
 		}
 	} else {
-		return 0;
+		return 1;
+	}
+}
+
+sub original_is_newer {
+	my ($original, $cached, $same_ok) = @_;
+
+	# only 'stat' each file once
+	my $original_stat = lstat($original);
+	my $cached_stat = lstat($cached);
+
+	# ctime tells us when the inode was last modified (which will be when it was created, at the earliest)
+	# mtime tells us when the file was last modified
+	# if either one (for the original) is greater than the cache's ctime, we say 'true'
+	return greater($original_stat->ctime, $cached_stat->ctime, $same_ok)
+		|| greater($original_stat->mtime, $cached_stat->ctime, $same_ok);
+}
+
+sub greater {
+	my ($left, $right, $same_ok) = @_;
+
+	if ($same_ok) {
+		return $left > $right;
+	} else {
+		return $left >= $right;
 	}
 }
 
