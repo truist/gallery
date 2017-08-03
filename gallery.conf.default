@@ -11,10 +11,9 @@
 
 	# override the rest of these if you like:
 
-	# highlight_filename => '#highlight',
+	# sort_images_by => 'date', # or 'name'
 
-	# Can be 'date' (slower, requires Image::ExifTool and Date::Parse)
-	# sort_images_by => 'name',
+	# highlight_filename => '#highlight',
 
 	# These are "landscape" not because we assume all pictures are landscape,
 	# but because we assume most monitors are landscape. That's probably not

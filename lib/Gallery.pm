@@ -1,11 +1,13 @@
 package Gallery;
 use Mojo::Base 'Mojolicious';
 
+use Date::Parse;
 use File::Basename;
+use File::Copy;
 use File::Path 'make_path';
 use File::stat;
-use File::Copy;
 use IO::Handle;
+use Image::ExifTool;
 use Image::Imlib2;
 use Image::JpegTran::AutoRotate;
 use List::Util qw{min shuffle first};
@@ -32,7 +34,7 @@ sub startup {
 
 				albums_dir => '/path/to/your/original/images',
 				highlight_filename => '#highlight',
-				sort_images_by => 'name',
+				sort_images_by => 'date',
 
 				cache_dir => '/path/to/a/cache/dir',
 
@@ -306,11 +308,6 @@ sub greater {
 
 sub exifdate {
 	my ($image_path) = @_;
-
-	return 'unused' unless 'date' eq $config->{sort_images_by};
-
-	eval q{use Image::ExifTool}; die "$@" if $@;
-	eval q{use Date::Parse}; die "$@" if $@;
 
 	my $exiftool = Image::ExifTool->new();
 	$exiftool->ExtractInfo($image_path, {})
