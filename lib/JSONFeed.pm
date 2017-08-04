@@ -19,7 +19,7 @@ sub json_feed {
 		version => 'https://jsonfeed.org/version/1',
 		title => $config->{site_title},
 		home_page_url => $album_url,
-		feed_url => "$album_url?feed=json",
+		feed_url => "$album_url/feed.json",
 	};
 
 	my ($subalbums, $images) = load_album($target, $basepath);
