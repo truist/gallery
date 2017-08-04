@@ -310,7 +310,7 @@ sub exifdate {
 	my ($image_path) = @_;
 
 	my $exiftool = Image::ExifTool->new();
-	$exiftool->ExtractInfo($image_path, {})
+	$exiftool->ExtractInfo($image_path, ['DateTimeOriginal', 'FileModifyDate'], { FastScan => 1 })
 		or die "couldn't extract info for $image_path: $!";
 
 	my $date = $exiftool->GetValue('DateTimeOriginal', 'ValueConv')
