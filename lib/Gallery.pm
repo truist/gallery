@@ -334,7 +334,9 @@ sub exifdate_cached {
 }
 
 sub url_escape {
-	return Mojo::Util::url_escape(@_, '^A-Za-z0-9\-._~\/\?\=');
+	#return Mojo::Util::url_escape(@_);
+	#return Mojo::Util::url_escape(@_, '^A-Za-z0-9\-._~\/\?\=');
+	return Mojo::Util::url_escape(@_,  '^A-Za-z0-9\-._~/?=');
 }
 
 1;
