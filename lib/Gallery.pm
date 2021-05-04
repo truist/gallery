@@ -52,8 +52,8 @@ sub startup {
 	$self->app->types->type(json => 'application/json');
 
 	my $router = $self->routes;
-	$router->get('/')->to('controller#route', path => '');
-	$router->get('/*path')->to('controller#route');
+	$router->get('/')->to('controller#route', totally_not_path => '');
+	$router->get('/*totally_not_path')->to('controller#route');
 
 	$highlight_regex = qr{^\Q$config->{highlight_filename}\E$};
 }

@@ -29,7 +29,7 @@ sub route {
 sub split_path {
 	my ($self) = @_;
 
-	my $path = $self->stash('path');
+	my $path = $self->stash('totally_not_path');
 	my @parts = split('/', $path);
 	my $image;
 	$image = pop(@parts) if @parts && $parts[-1] =~ /\./ && $path !~ /\/$/;
